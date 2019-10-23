@@ -210,30 +210,14 @@ void insert(int key, int  val, node *root)
 }
 
 //The modify function is used to update the corrensponding data to a key that already holds data
-void modify(int key)
+void modify(int key, node *ptr, int val)
 {
+    
 
+    //key of value must be equal to key of record.
+    //set data pointer to the address of the new value
 }
 
-//The merge function merges a node with another one when it falls beyond the minimum threshold
-void merge(node *nodeTo, node *nodeFrom)
-{
-    //this only applies when merging with a node's right sibling
-    //new data would have to fill the first slots of the left node since data being copied will be less than 
-    //the already existing data
-    node *n = nodeFrom;
-    node *m = nodeTo;
-    int i = m->size;
-    for (int j = 0; j < n->size; j++)
-    {
-        m->ptr[i]=n->ptr[j];
-        m->key[i]=n->key[j];
-        i++;
-        m->size++;
-        //don't forget to delete copied items
-    }
-    n->parent=NULL;
-}
 
 //The split function is used to split nodes when their contents exceed the maximum threshold
 void split(node *nodeTosplit)
@@ -244,14 +228,25 @@ void split(node *nodeTosplit)
     int j=0;
     node *temp_ptr[fanout];
     int temp_key[fanout];
+    temp_key = malloc((fanout)*sizeof(int));
+    if(temp_key==NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
+    temp_ptr = malloc(fanout*sizeof(int));
+    if(temp_ptr==NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
     node *newNode = init_node();
     for (i = (n->size/2)-1; i < n->size; i++)
     {
         temp_ptr[j] = n->ptr[i];
         temp_key[j+1] = n->key[i];
+        n->ptr[i] = NULL;
+        n->key[i] = NULL;
         j++;
         size++;
-        //don't forget to delete copied items
     }
 
     newNode->key = temp_key;
@@ -263,11 +258,6 @@ void split(node *nodeTosplit)
     {
         newNode->is_leaf = true;
     }
-    
-    //copy some items in pointer and key arrays and store in temporary arrays
-    //create new node and copy items from temporary arrays into new node.
-    //set parent pointer of new node to parent of previous node
-    //if node is not the first child, copy key and pointer value of the first entry and insert into its parent node 
 }
 
 
