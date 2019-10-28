@@ -16,15 +16,13 @@
 
 #ifdef _WIN32
 #define bool char
-#define true 1
-#define false 0
 #endif
 
 #include "data_types.h"
 #include "query.h"
 #include <stdbool.h>
 
-#define DEFAULT_FANOUT 5
+#define DEFAULT_FANOUT 5000
 
 
 /*
@@ -139,7 +137,7 @@ node *find_node (node * root, int key)
             }
 
         }
-        
+
     }
     }
     return n;
@@ -159,7 +157,7 @@ int *find(node *root, int key)
     {
         if(n->key[i]==key)
         {
-            break; 
+            break;
         }
     }
     return (int *)n->ptr[i];
@@ -172,6 +170,8 @@ For Splitting B+Tree Nodes (Chapter 10.8.3)
 */
 
 // TODO: here you will need to define INSERT related method(s) of adding key-keyues in your B+Tree.
+
+//helper function to start a new b+ tree
 node * start_tree(int key, int * val){
     node *rootNode = init_leaf();
     rootNode->key[0] = key;
@@ -182,45 +182,63 @@ node * start_tree(int key, int * val){
     return rootNode;
 }
 
-void insert(int key, int  val, node *root)
+/*
+* Helper function to get the index of the record to the left of a record
+*/
+int get_left_index(node *parent, node *leftNode)
 {
-    int *valPtr = NULL;
-    node *leaf = NULL;
-    valPtr = find(root,key);
-    if (valPtr!=NULL)
+    int left_index = 0;
+    while(parent->[left_index] != left && parent->size >= left_index)
     {
-        valPtr = &val;
+        left_index++;
     }
-    valPtr =  &val;
-
-    if (root==NULL)
-    {
-        return start_tree(key,valPtr)
-        return root;
-    }
-
-    leaf = find_node(root,key)
-
-    if(leaf->size < fanout-1){
-        leaf =  
-    }
-
-    
-    
+    return left_index;
 }
 
-//The modify function is used to update the corrensponding data to a key that already holds data
-void modify(int key, node *ptr, int val)
+/*
+* Helper function to insert record into a leaf node
+*/
+node *leaf_insertion(node *leaf, int key, int *valPtr)
 {
-    
+    //find right index to insert data
+    int insert_pos = 0;
+    while(leaf->size > insert_pos && leaf->key[insert_pos]<key)
+    {
+        insert_pos++;
+    }
 
-    //key of value must be equal to key of record.
-    //set data pointer to the address of the new value
+    for(int i = leaf->size; i > insert_pos; i--)
+    {
+        leaf->ptr[i] = leaf->ptr[i-1];
+        leaf->key[i] = leaf->key[i-1];
+    }
+
+    //insert key and pointer to new data into leaf
+    leaf->ptr[insert_pos] = valPtr;
+    leaf->key[insert_pos] = key;
+    leaf->size++;
 }
 
 
-//The split function is used to split nodes when their contents exceed the maximum threshold
-void split(node *nodeTosplit)
+/*
+* Helper function to insert an item or record into an internal node
+*/
+node *node_insertion(node *root, node *nodeToInsert, int left_index, int valKey)
+{
+    node *n = nodeToInsert;
+    for(int i = n->size; i>left_index;i--)
+    {
+        n->ptr[i+1] = n->ptr[i];
+        n->key[i] = n->key[i-1];
+    }
+    n->key[left_index] = key;
+    n->ptr[left_index+1] = child;
+    return root;
+}
+
+
+//The splitNode_andInsert function is used to split nodes when their contents exceed the maximum threshold and insert a new record
+node *splitNode_andInsert(node *nodeTosplit, node *root, int valKey, int val)
 {
     node *n = nodeTosplit;
     int size;
@@ -242,11 +260,11 @@ void split(node *nodeTosplit)
     for (i = (n->size/2)-1; i < n->size; i++)
     {
         temp_ptr[j] = n->ptr[i];
-        temp_key[j+1] = n->key[i];
+        temp_key[j] = n->key[i];
         n->ptr[i] = NULL;
         n->key[i] = NULL;
         j++;
-        size++;
+        newNode->size++;
     }
 
     newNode->key = temp_key;
@@ -256,9 +274,68 @@ void split(node *nodeTosplit)
 
     if (n->is_leaf)
     {
+        node *valPtr = &val;
         newNode->is_leaf = true;
+        if(valKey<=newNode.key[0])
+        {
+            return leaf_insertion(newNode, valKey, valPtr);
+        }
+        else
+        {
+            return leaf_insertion(n, valKey, valPtr);
+        }
+    }
+
+
+    int left_index = get_left_index(n->parent, newNode);
+    if(valKey<=newNode.key[0])
+    {
+       return node_insertion(root, newNode, left_index, valKey);
+    }
+    else
+    {
+        return node_insertion(root, n, left_index, valKey);
     }
 }
+
+
+/*
+* Main insert function
+*/
+void insert(int key, int  val, node *root)
+{
+    int *valPtr = NULL;
+    node *leaf = NULL;
+    valPtr = find(root,key);
+
+    //update data value if record already exists
+    if (valPtr!=NULL)
+    {
+        valPtr = &val;
+    }
+
+    //if tree doesn't exist, start a new one
+    if (root==NULL)
+    {
+        return start_tree(key,valPtr)
+        return root;
+    }
+
+    //find leaf nodes to insert data
+    leaf = find_node(root,key)
+
+    //insert into leaf if there's room
+    if(leaf->size < fanout-1){
+        leaf = leaf_insertion(leaf, key, valPtr)
+    }
+    else
+    {
+        leaf = splitNode_andInsert(leaf,root, key,val);
+
+    }
+
+}
+
 
 
 
@@ -284,3 +361,5 @@ Can you describe a generic cost expression for Scan, measured in number of rando
 
 
 #endif
+
+
