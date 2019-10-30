@@ -35,6 +35,7 @@ int parseRouteQuery(char queryLine[], STORAGECXT_t *store){
     KEY_t key, lowKey, highKey;
     VAL_t val;
 
+
     // finish loadPath
     // read a binary file
     // parse it into an array of keys and array of values, and a total length
@@ -60,6 +61,8 @@ int parseRouteQuery(char queryLine[], STORAGECXT_t *store){
         // query not parsed. handle the query as unknown
         return -1;
     }
+
+
 
     // fflush(stdin);
 

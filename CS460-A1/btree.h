@@ -22,7 +22,7 @@
 #include "query.h"
 #include <stdbool.h>
 
-#define DEFAULT_FANOUT 4
+#define DEFAULT_FANOUT 5000
 
 
 /*
@@ -49,6 +49,10 @@ typedef struct node
     struct node *next;
 }node;
 
+typedef struct data{
+    int value;
+}data;
+
 int fanout = DEFAULT_FANOUT;
 node *root = NULL;
 
@@ -70,7 +74,7 @@ node *init_node(void)
     {
         exit(EXIT_FAILURE);
     }
-    n->ptr = malloc((fanout)*sizeof(int));
+    n->ptr = malloc((fanout)*sizeof(void *));
     if(n->ptr==NULL)
     {
         exit(EXIT_FAILURE);
@@ -79,6 +83,12 @@ node *init_node(void)
     n->is_leaf = false;
     n->parent = NULL;
     n->next = NULL;
+    return n;
+}
+
+data *initData(int value){
+    data *n = (data*)malloc(sizeof(data));
+    n->value = value;
     return n;
 }
 
@@ -145,7 +155,7 @@ node *find_node (int key)
 //find function
 //this is the main find function and it returns an integer pointer to the data which is being searched
 //It takes a pointer to the root node of the b+ tree and the key of the value to be seaarched for.
-int *find(int key)
+data *find(int key)
 {
     node *n = find_node(key);
 
@@ -158,7 +168,7 @@ int *find(int key)
     {
         if(n->key[i]==key)
         {
-            return (int *)n->ptr[i];
+            return (data *)n->ptr[i];
         }
     }
     return NULL;
@@ -173,10 +183,11 @@ For Splitting B+Tree Nodes (Chapter 10.8.3)
 // TODO: here you will need to define INSERT related method(s) of adding key-keyues in your B+Tree.
 
 //helper function to start a new b+ tree
-node * start_tree(int key, int * val){
+node * start_tree(int key, int val){
+    data *valPtr = initData(val);
     node *rootNode = init_leaf();
     rootNode->key[0] = key;
-    rootNode->ptr[0] = val;
+    rootNode->ptr[0] = valPtr;
     rootNode->parent = NULL;
     rootNode->size++;
     rootNode->ptr[fanout-1] = NULL;
@@ -198,7 +209,7 @@ node *insert_into_new_root(node *rightNode, node *leftNode, int valKey)
     rightNode->parent=root;
     return root;
 }
-
+node *insert_into_parentNode(node *root, node *rightNode, node *left, int valKey);
 
 /*
 * Helper function to get the index of the record to the left of a record
@@ -216,7 +227,7 @@ int get_left_index(node *parent, node *leftNode)
 /*
 * Helper function to insert record into a leaf node
 */
-node *leaf_insertion(node *leaf, int key, int *valPtr)
+node *leaf_insertion(node *leaf, int key, data *valPtr)
 {
     //find right index to insert data
     int insert_pos = 0;
@@ -275,7 +286,7 @@ node *splitNode_andInsert(node *nodeTosplit, node *root, node *rightNode, int va
     }
     else
     {
-        temp_ptr = malloc(fanout*sizeof(int *));
+        temp_ptr = malloc(fanout*sizeof(data *));
     }
 
     if(temp_ptr==NULL)
@@ -294,11 +305,12 @@ node *splitNode_andInsert(node *nodeTosplit, node *root, node *rightNode, int va
 
     newNode->key = temp_key;
     newNode->ptr = temp_ptr;
-    newNode->parent = n->parent;
+    insert_into_parentNode(root, newNode, n, valKey);
+
 
     if (n->is_leaf)
     {
-        int *valPtr = &val;
+        data *valPtr = initData(val);
         newNode->is_leaf = true;
         if(valKey <= newNode->key[0])
         {
@@ -321,14 +333,9 @@ node *splitNode_andInsert(node *nodeTosplit, node *root, node *rightNode, int va
     }
 }
 
-
-/*
-* Helper function to insert a node record into its parent node
-*/
 node *insert_into_parentNode(node *root, node *rightNode, node *left, int valKey)
 {
     node *parent = left->parent;
-
 
     if(parent==NULL)
     {
@@ -351,14 +358,14 @@ node *insert_into_parentNode(node *root, node *rightNode, node *left, int valKey
 */
 node *insert(int key, int  val, node *root)
 {
-    int *valPtr = NULL;
+    data *valPtr = NULL;
     node *leaf = NULL;
 
 
     //if tree doesn't exist, start a new one
     if (root==NULL)
     {
-        root = start_tree(key,valPtr);
+        root = start_tree(key,val);
         return root;
     }
 
@@ -366,7 +373,7 @@ node *insert(int key, int  val, node *root)
     valPtr = find(key);
     if (valPtr!=NULL)
     {
-        valPtr = &val;
+        valPtr = initData(val);
         return root;
     }
 
@@ -375,7 +382,9 @@ node *insert(int key, int  val, node *root)
     leaf = find_node(key);
 
     //insert into leaf if there's room
+    valPtr = initData(val);
     if(leaf->size < fanout-1){
+
         leaf = leaf_insertion(leaf, key, valPtr);
         return root;
     }
@@ -383,7 +392,6 @@ node *insert(int key, int  val, node *root)
     {
         leaf = splitNode_andInsert(leaf,root, NULL, val,0, key);
         return root;
-
     }
 
 }
