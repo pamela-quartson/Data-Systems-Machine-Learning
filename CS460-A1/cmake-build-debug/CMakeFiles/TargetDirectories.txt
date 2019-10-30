@@ -1,0 +1,3 @@
+C:/Users/Someone/Desktop/CS460-A1/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Someone/Desktop/CS460-A1/cmake-build-debug/CMakeFiles/CS460-A1.dir
+C:/Users/Someone/Desktop/CS460-A1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
